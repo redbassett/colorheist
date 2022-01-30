@@ -1,0 +1,96 @@
+<!doctype html>
+
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>Free Colors from Color Museum</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+</head>
+
+<body>
+    <div class="container-fluid bg-dark pb-5">
+        <h1 class="text-light"><img src="https://color.museum/static/media/logo.7f8c7880.png" alt="color.museum" width="233" height="30"> Heist</h1>
+        <p class="text-light">We stole all the color NFTs from <a href="https://color.museum/" style="color: lightgrey;" target="_blank">color.museum</a> so you don't have to.</p>
+        <div id="grid" class="row row-cols-1 row-cols-md-2 row-cols-lg-4 row-cols-xl-6 g-4">
+
+        </div>
+    </div>
+
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
+    <script type="text/javascript">
+        $.whenAll = function( firstParam ) {
+            var args = arguments,
+            sliceDeferred = [].slice,
+            i = 0,
+            length = args.length,
+            count = length,
+            rejected,
+            deferred = length <= 1 && firstParam && jQuery.isFunction( firstParam.promise )
+                ? firstParam
+                : jQuery.Deferred();
+        
+            function resolveFunc( i, reject ) {
+                return function( value ) {
+                    rejected |= reject;
+                    args[ i ] = arguments.length > 1 ? sliceDeferred.call( arguments, 0 ) : value;
+                    if ( !( --count ) ) {
+                        var fn = rejected ? deferred.rejectWith : deferred.resolveWith;
+                        fn.call(deferred, deferred, sliceDeferred.call( args, 0 ));
+                    }
+                };
+            }
+            
+            if ( length > 1 ) {
+                for( ; i < length; i++ ) {
+                    if ( args[ i ] && jQuery.isFunction( args[ i ].promise ) ) {
+                        args[ i ].promise().then( resolveFunc(i), resolveFunc(i, true) );
+                    } else {
+                        --count;
+                    }
+                }
+                if ( !count ) {
+                    deferred.resolveWith( deferred, args );
+                }
+            } else if ( deferred !== firstParam ) {
+                deferred.resolveWith( deferred, length ? [ firstParam ] : [] );
+            }
+            return deferred.promise();
+        };
+
+        const cap = 50;
+        const colors = [];
+        const calls = [];
+
+        for (let i = 1; i <= cap; i++) {
+            calls.push($.ajax({ url: 'https://metadata.color.museum/api/v1/image/' + i, method: 'GET', success: (result) => colors.push(result) }));
+        }
+
+        Promise.allSettled(calls).then(function() {
+            colors.sort((a,b) => a.nftNo - b.nftNo);
+
+            colors.forEach((color) => {
+                $('<div>', { class: 'col' }).append(
+                    $('<div>', { class: 'card' }).append(
+                        $('<div>', { class: 'card-img-top', style: 'background-color: ' + color.hex + '; height: 100px;' }),
+                        $('<div>', { class: 'card-body' }).append(
+                            $('<h5>', { class: 'card-title' }).text(color.name),
+                            $('<p>', { class: 'card-text' }).append(
+                                $('<span>').html('<b>Owner:</b> Nobody, it\'s a color'),
+                                $('<br>'),
+                                $('<span>').html('<b>Hex Code:</b> ' + color.hex),
+                                $('<hr>'),
+                                $('<span>').text(color.description)
+                            )
+                        )
+                    )
+                ).appendTo('#grid');
+            });
+        });
+    </script>
+</body>
+</html>
